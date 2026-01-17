@@ -1,0 +1,5 @@
+[project]
+name = "dstotijn-agent-skills"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = ["skills-ref @ git+https://github.com/agentskills/agentskills.git#subdirectory=skills-ref"]

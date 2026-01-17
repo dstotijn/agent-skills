@@ -1,0 +1,24 @@
+[tools]
+python = "3.14.2"
+uv = "0.9.26"
+
+[settings]
+python.uv_venv_auto = true
+
+[tasks.install]
+description = "Install dependencies"
+run = "uv sync"
+
+[tasks.validate]
+description = "Validate all skills"
+run = """
+for skill in skills/*/SKILL.md; do
+  dir=$(dirname "$skill")
+  echo "Validating $dir..."
+  uv run skills-ref validate "$dir"
+done
+"""
+
+[tasks."validate:skill"]
+description = "Validate a single skill (e.g., mise run validate:skill mise)"
+run = "uv run skills-ref validate skills/$1"
