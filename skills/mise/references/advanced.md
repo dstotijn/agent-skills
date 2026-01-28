@@ -34,6 +34,41 @@ mise run dev
 mise run test
 ```
 
+## Parallel Tasks
+
+Use `depends` to run multiple tasks in parallel. Tasks without dependencies on each other run concurrently:
+
+```toml
+[tasks.dev]
+description = "Run backend and frontend dev servers"
+depends = ["dev:server", "dev:web"]
+
+[tasks."dev:server"]
+description = "Run Go backend"
+run = "go run ./cmd/server"
+
+[tasks."dev:web"]
+description = "Run frontend dev server"
+dir = "web"
+run = "pnpm dev"
+```
+
+Now `mise run dev` starts both servers in parallel.
+
+## Forcing Color Output
+
+When running tasks in parallel, output may lose color because stdout is not a TTY. Use `env` to force color output:
+
+```toml
+[tasks."dev:web"]
+description = "Run frontend dev server"
+dir = "web"
+run = "pnpm dev"
+env = { FORCE_COLOR = "1" }
+```
+
+`FORCE_COLOR=1` is respected by most Node.js tools (Vite, esbuild, etc.).
+
 ## Troubleshooting
 
 **Tool not found after install:**
