@@ -4,12 +4,13 @@ Lefthook is a fast git hooks manager. Manage it through mise to ensure consisten
 
 ## Adding Lefthook to a Project
 
-In `mise.toml`:
+```bash
+mise use lefthook --pin
+```
+
+Then add the postinstall hook to `mise.toml`:
 
 ```toml
-[tools]
-lefthook = "1.10.10"
-
 [hooks]
 postinstall = "lefthook install"
 ```

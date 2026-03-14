@@ -4,13 +4,14 @@ uv is a fast Python package manager. When managed through mise, it provides repr
 
 ## Setup
 
-In `mise.toml`:
+```bash
+mise use python --pin
+mise use uv --pin
+```
+
+Then add settings to `mise.toml`:
 
 ```toml
-[tools]
-python = "3.14.2"
-uv = "0.9.26"
-
 [settings]
 python.uv_venv_auto = true
 ```
