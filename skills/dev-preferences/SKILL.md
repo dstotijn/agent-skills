@@ -36,20 +36,7 @@ See **`references/typescript.md`** for module conventions, type patterns, error 
 
 ### Backend (Go)
 
-| Concern      | Choice                              |
-|--------------|---------------------------------------|
-| Database     | PostgreSQL or SQLite (modernc)        |
-| SQL layer    | sqlc — never ORMs (no GORM, no ent) |
-| Migrations   | goose                                 |
-| Config       | koanf (YAML, JSON, env vars)          |
-| IDs          | Short, sortable, no-ambiguity (custom, no lib) |
-| Testing      | stdlib `testing` + `google/go-cmp/cmp` — no testify |
-| Linting      | staticcheck                           |
-| Formatting   | gofmt / goimports                     |
-
-Naming is critical — follow Effective Go conventions closely: don't stutter (`user.New` not `user.NewUser`), no `Get` prefix on getters, short identifiers, single-letter receivers.
-
-See **`references/go.md`** for full naming guide, service structs, HTTP handlers, control flow, testing, error handling, composition, concurrency, and project layout.
+See the **`go-dev`** skill for Go-specific tech stack, conventions, and patterns.
 
 ### Tooling
 
@@ -68,7 +55,6 @@ All dev tools managed via **mise** (see the `mise` skill). Never install tools g
 - Only add abstractions when they earn their keep (used in 3+ places, or significantly clarify intent).
 - Comments start with a capital letter and end with a period.
 - Comment exported functions and public APIs — focus on **why**, not what.
-- Go: follow godoc style (comment starts with the function/type name).
 - TypeScript: plain `//` comments, no JSDoc.
 - Use `TODO:` and `FIXME:` markers. Commented-out code is acceptable temporarily when paired with a TODO.
 - No section divider comments (`// --- Handlers ---`).

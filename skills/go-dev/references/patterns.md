@@ -13,6 +13,16 @@
 - [Project Layout](#project-layout) — domain-based, no generic packages
 - [Graceful Shutdown](#graceful-shutdown) — signal.NotifyContext, force quit
 - [Concurrency](#concurrency) — channels, select, defer
+- [Slices](#slices) — nil slices, declaration style
+- [Error Strings](#error-strings) — lowercase, no punctuation
+- [Crypto Rand](#crypto-rand) — never math/rand for keys
+- [Import Grouping](#import-grouping) — stdlib first, blank line, third-party
+- [Goroutine Lifetimes](#goroutine-lifetimes) — document exits, prevent leaks
+- [Receiver Type](#receiver-type) — pointer vs value guidelines
+- [Pass Values](#pass-values) — don't use pointers to save bytes
+- [Synchronous Functions](#synchronous-functions) — prefer sync, let callers add concurrency
+- [In-Band Errors](#in-band-errors) — use (value, ok) or (value, error)
+- [Module Hygiene](#module-hygiene) — go mod tidy, go.sum, repeatable builds
 
 ## Naming
 
@@ -426,3 +436,203 @@ defer f.Close()
 ```
 
 Deferred calls run LIFO when the function returns. Arguments are evaluated at the `defer` statement, not at execution.
+
+## Slices
+
+Prefer nil slice declarations over empty literals:
+
+```go
+// Good — nil slice is the idiomatic default.
+var t []string
+
+// Avoid — unnecessary allocation, same behavior for append/len/range.
+t := []string{}
+```
+
+Exception: when encoding JSON, use `[]string{}` if the consumer expects `[]` instead of `null`.
+
+## Error Strings
+
+Error strings are lowercase and have no trailing punctuation — they're often wrapped or prefixed by callers. This is distinct from log messages, which are capitalized labels ending with a period (see [Logging](#logging)).
+
+```go
+// Good.
+fmt.Errorf("fetch user %q: %w", id, err)
+
+// Bad — capital letter and period break when wrapped.
+fmt.Errorf("Fetch user %q: %w.", id, err)
+```
+
+Proper nouns and acronyms keep their casing: `"TLS handshake failed"` is fine.
+
+## Crypto Rand
+
+Never use `math/rand` or `math/rand/v2` to generate keys, tokens, or anything security-sensitive. Use `crypto/rand`:
+
+```go
+// Keys and random bytes.
+key := make([]byte, 32)
+if _, err := crypto_rand.Read(key); err != nil {
+    return err
+}
+
+// Random text (Go 1.24+).
+token := crypto_rand.Text()
+```
+
+## Import Grouping
+
+Group imports with a blank line between stdlib and third-party packages. Don't rename imports unless there's a collision.
+
+```go
+import (
+    "context"
+    "fmt"
+    "net/http"
+
+    "github.com/google/go-cmp/cmp"
+    "mycompany.com/internal/user"
+)
+```
+
+Side-effect imports (`import _ "pkg"`) belong only in `main` or test files.
+
+## Goroutine Lifetimes
+
+Every goroutine you spawn should have a clear exit condition. If it's not obvious when or whether a goroutine exits, document it — goroutines that block on channels or I/O indefinitely are a common source of leaks.
+
+```go
+// Fine — exits when ch is closed. Use when the producer guarantees close.
+go func() {
+    for msg := range ch {
+        handle(msg)
+    }
+}()
+
+// Better — exits on ctx cancellation even if ch is never closed.
+go func() {
+    for {
+        select {
+        case msg := <-ch:
+            handle(msg)
+        case <-ctx.Done():
+            return
+        }
+    }
+}()
+```
+
+When spawning goroutines in libraries, give callers a way to stop them (context cancellation, a `Close` method, or a done channel). `for range ch` is idiomatic when the channel lifecycle is well-defined — the concern is goroutines with no guaranteed exit path.
+
+## Receiver Type
+
+Choose pointer or value receivers consistently for a type — don't mix.
+
+**Use pointer receivers** when:
+- The method mutates the receiver.
+- The struct contains `sync.Mutex` or other synchronization primitives.
+- The struct is large (treat it like passing all fields as arguments).
+
+**Use value receivers** when:
+- The type is small and immutable (e.g., `time.Time`, coordinates, small value objects).
+- The type is a map, func, or chan (already reference types).
+
+When in doubt, use a pointer receiver.
+
+## Pass Values
+
+Don't use pointers just to save a few bytes. If a function only reads through `*x`, the argument shouldn't be a pointer. This applies especially to strings and interface values — `*string` and `*io.Reader` are almost never what you want.
+
+```go
+// Good — string is small and immutable.
+func Greet(name string) string
+
+// Bad — pointer adds indirection for no benefit.
+func Greet(name *string) string
+```
+
+Use pointers when the value is genuinely large, when you need to distinguish "absent" from "zero", or when the caller needs to observe mutations.
+
+## Synchronous Functions
+
+Prefer synchronous functions that return results directly. Let callers add concurrency if they need it — don't bake goroutines and channels into your API.
+
+```go
+// Good — synchronous, caller decides on concurrency.
+func FetchUser(ctx context.Context, id string) (User, error) {
+    // ...
+}
+
+// Bad — forces async on every caller.
+func FetchUser(ctx context.Context, id string) <-chan Result {
+    ch := make(chan Result, 1)
+    go func() { /* ... */ }()
+    return ch
+}
+```
+
+Synchronous APIs are easier to test, compose, and reason about. If the caller wants to run three fetches concurrently, they can wrap each in a goroutine themselves.
+
+## In-Band Errors
+
+Don't use magic return values to signal errors. Use multiple return values — either `(value, error)` or `(value, ok)`:
+
+```go
+// Good — caller can distinguish "not found" from "empty string".
+func Lookup(key string) (value string, ok bool)
+
+// Bad — "" could be a valid value or an error signal.
+func Lookup(key string) string
+```
+
+This is especially important for maps, where the zero value is a valid entry:
+
+```go
+v, ok := m[key]
+if !ok {
+    // key genuinely absent
+}
+```
+
+## Module Hygiene
+
+Practices that keep builds repeatable and dependencies clean.
+
+### Before every release
+
+```bash
+go mod tidy       # Remove unused deps, add missing ones.
+go mod verify     # Verify checksums match go.sum.
+go vet ./...      # Catch common mistakes.
+go test ./...     # Run all tests.
+```
+
+### Commit both `go.mod` and `go.sum`
+
+`go.mod` declares dependencies; `go.sum` contains cryptographic checksums that verify downloaded modules haven't been tampered with. Always commit both. Never edit either by hand — use `go get` and `go mod tidy`.
+
+### Pin versions explicitly
+
+```bash
+go get example.com/pkg@v1.2.3   # Pin to exact version.
+go get -u=patch ./...            # Upgrade to latest patch only.
+```
+
+Avoid `go get -u ./...` (upgrades all transitive deps to latest minor) unless you intend to upgrade everything — it can pull in breaking changes from indirect dependencies.
+
+### Replace directives
+
+Use `replace` for local development only. Remove them before committing unless the replacement is intentional and permanent (e.g., a fork).
+
+```go
+// Local development — never commit this.
+replace example.com/pkg => ../pkg
+```
+
+### Private modules
+
+Configure `GOPRIVATE` for internal modules so they bypass the public proxy and checksum database:
+
+```bash
+go env -w GOPRIVATE="github.com/mycompany/*"
+```
