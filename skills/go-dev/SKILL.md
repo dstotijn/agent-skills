@@ -32,4 +32,4 @@ Idiomatic Go patterns and conventions. This skill builds on `dev-preferences` â€
 
 ## Reference
 
-See **`references/patterns.md`** for the full guide covering: naming, logging, service structs, testing, composition, control flow, error handling, HTTP handlers, project layout, graceful shutdown, concurrency, slices, error strings, crypto rand, import grouping, goroutine lifetimes, receiver types, pass values, synchronous functions, in-band errors, and module hygiene.
+See **`references/patterns.md`** for the full guide covering: naming, logging, service structs, testing, composition, control flow, error handling, HTTP handlers, project layout, graceful shutdown, concurrency, slices, error strings, crypto rand, import grouping, package-level declarations, goroutine lifetimes, receiver types, pass values, synchronous functions, in-band errors, and module hygiene.

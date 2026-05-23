@@ -17,6 +17,7 @@
 - [Error Strings](#error-strings) — lowercase, no punctuation
 - [Crypto Rand](#crypto-rand) — never math/rand for keys
 - [Import Grouping](#import-grouping) — stdlib first, blank line, third-party
+- [Package-Level Declarations](#package-level-declarations) — collate vars and consts near the top of the file
 - [Goroutine Lifetimes](#goroutine-lifetimes) — document exits, prevent leaks
 - [Receiver Type](#receiver-type) — pointer vs value guidelines
 - [Pass Values](#pass-values) — don't use pointers to save bytes
@@ -496,6 +497,35 @@ import (
 ```
 
 Side-effect imports (`import _ "pkg"`) belong only in `main` or test files.
+
+## Package-Level Declarations
+
+Collate package-level `const` and `var` declarations near the top of the file, after the imports and before any types or functions. Group them into a single `const (...)` / `var (...)` block per kind rather than scattering individual declarations throughout the file.
+
+```go
+package user
+
+import (
+    "errors"
+    "time"
+)
+
+const (
+    DefaultTimeout = 5 * time.Second
+    MaxRetries     = 3
+)
+
+var (
+    ErrNotFound = errors.New("user not found")
+    ErrConflict = errors.New("user already exists")
+)
+
+type Service struct {
+    // ...
+}
+```
+
+Within a block, put exported identifiers before unexported ones. If a declaration is only relevant to one type or function, keep it lexically close to that type or function instead — the rule is about collation, not forcing everything to the top.
 
 ## Goroutine Lifetimes
 
