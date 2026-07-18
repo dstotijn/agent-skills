@@ -18,6 +18,7 @@
 - [Crypto Rand](#crypto-rand) — never math/rand for keys
 - [Import Grouping](#import-grouping) — stdlib first, blank line, third-party
 - [Package-Level Declarations](#package-level-declarations) — collate vars and consts near the top of the file
+- [Doc Comments](#doc-comments) — bracketed doc links for clickable references
 - [Goroutine Lifetimes](#goroutine-lifetimes) — document exits, prevent leaks
 - [Receiver Type](#receiver-type) — pointer vs value guidelines
 - [Pass Values](#pass-values) — don't use pointers to save bytes
@@ -526,6 +527,25 @@ type Service struct {
 ```
 
 Within a block, put exported identifiers before unexported ones. If a declaration is only relevant to one type or function, keep it lexically close to that type or function instead — the rule is about collation, not forcing everything to the top.
+
+## Doc Comments
+
+In doc comments, wrap identifiers in square brackets to turn them into clickable links. gopls, `go doc`, and pkg.go.dev all render `[Symbol]`, `[pkg.Symbol]`, and `[*pkg.Symbol]` as links to the referenced declaration. Available since Go 1.19.
+
+```go
+// NewClient returns a [Client] configured with the given [Options].
+// It returns [ErrInvalidConfig] if opts fails validation.
+//
+// For low-level transport control, see [net/http.Client] and
+// [*net/http.Transport].
+func NewClient(opts Options) (*Client, error) { ... }
+```
+
+Rules:
+- The bracketed identifier must resolve from the current file's scope — same-package symbols work bare (`[Client]`), other packages need their import path or imported name (`[net/http.Client]`).
+- Works in doc comments on packages, types, funcs, methods, vars, and consts.
+- Don't bracket non-identifiers (prose, parameter names, error string contents) — only real symbols.
+- URLs can use the same syntax: `[text]: https://example.com` defines a link target referenced as `[text]` elsewhere in the comment.
 
 ## Goroutine Lifetimes
 
