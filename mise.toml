@@ -21,4 +21,5 @@ done
 
 [tasks."validate:skill"]
 description = "Validate a single skill (e.g., mise run validate:skill mise)"
-run = "uv run skills-ref validate skills/$1"
+usage = 'arg "<skill>" help="Skill directory name under skills/"'
+run = 'uv run skills-ref validate "skills/$usage_skill"'
