@@ -1,6 +1,6 @@
 ---
 name: dev-preferences
-description: Personal development preferences and conventions for David Stotijn. Use this skill whenever writing code, starting a new project, making architectural decisions, choosing libraries or tools, setting up CI/CD, structuring a codebase, or picking between implementation approaches. This skill applies to any coding task — even if the user doesn't mention preferences, consult it to stay aligned with their established conventions. Trigger whenever you're about to scaffold, write new code, choose a framework, pick a database, design an API, or set up tooling.
+description: Personal development preferences and conventions for David Stotijn. Use when writing or reviewing code, scaffolding a project, designing architecture or APIs, choosing libraries, databases, or development tools, configuring CI/CD, or structuring a codebase. Do not use for operational, administrative, research-only, or writing tasks that do not involve implementation or technical design.
 ---
 
 # Dev Preferences
