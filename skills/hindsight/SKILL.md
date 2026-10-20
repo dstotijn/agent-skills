@@ -110,11 +110,13 @@ populated only when the bank stores document text, so treat an empty value as
 
 Retain only when the user explicitly asks, or when you learn something durable, confirmed, non-sensitive, and likely to save future work:
 
-- a stable user preference;
+- a stable user preference that no instruction file records;
 - a confirmed technical decision and its rationale;
 - a proven procedure or workaround;
 - a verified bug cause and fix;
 - a non-obvious constraint that will matter again.
+
+If the user keeps preferences and conventions in instruction files such as `AGENTS.md` or `CLAUDE.md`, propose a change to the relevant file instead of retaining the preference.
 
 Write a self-contained memory containing the useful fact, why it matters, and the confirmed outcome. Keep preferences and decisions concise; a root cause or procedure may be fuller, with the steps and evidence, because extraction distills it. Include exact values only when they are necessary and safe to persist.
 
