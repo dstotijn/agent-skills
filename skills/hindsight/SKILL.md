@@ -28,8 +28,17 @@ Both failure modes here are silent, so check rather than assume:
 - Retaining into a bank that does not exist creates it, so a typo silently produces
   a new empty bank instead of an error.
 
-If the project or user fixes a bank ID and its configuration, use that one and do not
-invent another.
+A repository may name its bank in its local Git config; use that bank for knowledge
+that belongs to the repository:
+
+```bash
+git config --get hindsight.bank
+```
+
+Use the `global` bank for knowledge that would help in any repository. Before
+retaining, ask whether the memory would help in another repository and pick the bank
+accordingly. If the project or user fixes a bank ID and its configuration, use that
+one and do not invent another.
 
 ## Recall selectively
 
@@ -41,20 +50,42 @@ Recall when a non-trivial task is likely to benefit from a past:
 - failure or lesson that could prevent repeated work;
 - fact the user explicitly asks you to remember or retrieve.
 
-Use a focused query:
+Use a focused query and a budget of `--max-tokens 1024` to `2048` instead of the
+4096 default:
 
 ```bash
-hindsight -o json memory recall <bank> "user preferences relevant to this task"
-hindsight -o json memory recall <bank> "previous decisions and confirmed problems in this area"
+hindsight -o json memory recall <bank> "user preferences relevant to this task" --max-tokens 1024
+hindsight -o json memory recall <bank> "previous decisions and confirmed problems in this area" --max-tokens 2048
 ```
 
-Use reflection only when synthesis across several memories would materially help:
+Filter on a known identity with `--tags`. The default `--tags-match any` also returns
+untagged memories; `any_strict` excludes them:
+
+```bash
+hindsight -o json memory recall <bank> "prior work and blockers" --tags issue:ABC-1234 --tags-match any_strict --max-tokens 1024
+```
+
+Recall cannot filter on `--context`.
+
+Use reflection only when synthesis across several memories would materially help. It
+is an agent loop of up to 10 LLM calls, so it is far slower and costlier than recall:
 
 ```bash
 hindsight -o json memory reflect <bank> "What past decisions or lessons should guide this task?"
 ```
 
+Bank directives steer only `reflect`, not retain.
+
 Do not recall for trivial questions, or when the current repository, documentation, or live system is the authoritative source. Treat recalled information as fallible and potentially stale; verify it before relying on it.
+
+## Fix the record
+
+When you verify that a recalled claim is wrong, correct it: re-retain the corrected
+memory under the same document ID, or delete the document if it no longer holds:
+
+```bash
+hindsight document delete <bank> <document_id>
+```
 
 ## Fetch exact source text when needed
 
@@ -85,12 +116,31 @@ Retain only when the user explicitly asks, or when you learn something durable, 
 - a verified bug cause and fix;
 - a non-obvious constraint that will matter again.
 
-Write a concise, self-contained memory containing the useful fact, why it matters, and the confirmed outcome. Include exact values only when they are necessary and safe to persist.
+Write a self-contained memory containing the useful fact, why it matters, and the confirmed outcome. Keep preferences and decisions concise; a root cause or procedure may be fuller, with the steps and evidence, because extraction distills it. Include exact values only when they are necessary and safe to persist.
+
+Shape every retain call the same way:
+
+- Always pass `--doc-id` with a stable, descriptive ID such as `<scope>--<slug>`. The
+  default ID is `cli_put_<YYYYmmdd_HHMMSS>`, and reusing a document ID replaces the
+  old document, so two retains in the same second (likely with `--async`) silently
+  overwrite each other. Re-retaining under the same ID is how you correct a memory.
+- Tag the memory with identities you know, such as `--document-tags issue:ABC-1234`,
+  not with content types. The CLI sends one item per call, so this flag tags exactly
+  that memory even though its help text calls it deprecated.
+- Give `--context` a short description of the source and situation, not a bare label.
+  It feeds fact extraction.
+- Pass `--timestamp` (ISO 8601) when the decision or event happened in the past; it
+  defaults to now.
 
 ```bash
-hindsight memory retain <bank> "The user prefers explicit Hindsight recall and retention calls; do not enable automatic transcript or Git ingestion." --context preferences
-hindsight memory retain <bank> "The build requires Node 20 because Node 18 fails with the confirmed ESM loader incompatibility." --context learnings
-hindsight memory retain <bank> "Run the integration suite with NODE_ENV=test; this selects the isolated test configuration." --context procedures
+hindsight memory retain <bank> "The user prefers explicit Hindsight recall and retention calls; do not enable automatic transcript or Git ingestion." \
+  --doc-id user--explicit-memory-calls --context "User preference stated while setting up agent memory"
+hindsight memory retain <bank> "The build requires Node 20 because Node 18 fails with the confirmed ESM loader incompatibility." \
+  --doc-id abc-1234--node20-esm-loader --document-tags issue:ABC-1234 \
+  --context "Root cause confirmed while fixing a failing CI build in <repo>"
+hindsight memory retain <bank> "Run the integration suite with NODE_ENV=test; this selects the isolated test configuration." \
+  --doc-id <repo>--integration-test-env --context "Procedure verified while running the <repo> integration suite" \
+  --timestamp 2026-01-15
 ```
 
 Retain is the slowest operation by a wide margin: extraction runs an LLM over the
@@ -106,7 +156,7 @@ Never retain:
 - passwords, API keys, tokens, credentials, private keys, or `.env` contents;
 - personal or customer data unless the user explicitly approves that specific retention.
 
-If sensitivity or future value is ambiguous, ask before retaining. Never send a broad payload merely because Hindsight can extract facts from it.
+Hindsight redacts secrets at retain time only when the bank has a `memory_defense` policy, so never rely on it. If sensitivity or future value is ambiguous, ask before retaining. Never send a broad payload merely because Hindsight can extract facts from it.
 
 ## If Hindsight is unavailable
 
